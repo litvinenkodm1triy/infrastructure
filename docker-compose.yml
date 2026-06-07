@@ -11,13 +11,10 @@ services:
     container_name: eureka-server
     ports:
       - "8761:8761"
+    environment:
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
     networks:
       - microservices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   config-server:
     build: ./config-server
@@ -27,19 +24,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/app/config
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
     volumes:
       - ./config-repo:/app/config
     networks:
       - microservices-network
     depends_on:
-      eureka-server:
-        condition: service_started
-    # healthcheck отключён
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
+      - eureka-server
 
   postgres:
     image: postgres:15
@@ -69,6 +60,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
       - microservices-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -83,7 +79,8 @@ services:
     networks:
       - microservices-network
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
 
   user-service:
     build: ../user-service-spring-
@@ -93,14 +90,10 @@ services:
     networks:
       - microservices-network
     depends_on:
-      config-server:
-        condition: service_started
-      eureka-server:
-        condition: service_started
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_started
+      - config-server
+      - eureka-server
+      - postgres
+      - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -118,12 +111,9 @@ services:
     networks:
       - microservices-network
     depends_on:
-      config-server:
-        condition: service_started
-      eureka-server:
-        condition: service_started
-      kafka:
-        condition: service_started
+      - config-server
+      - eureka-server
+      - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -136,14 +126,13 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration   # <--- ДОБАВЛЕНО
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
     networks:
       - microservices-network
     depends_on:
-      config-server:
-        condition: service_started
-      eureka-server:
-        condition: service_started
+      - config-server
+      - eureka-server
