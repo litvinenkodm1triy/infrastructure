@@ -9,7 +9,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/users/**
+            - Path=/api/v1/users/**
           filters:
             - name: CircuitBreaker
               args:
@@ -19,7 +19,7 @@ spring:
         - id: notification-service
           uri: lb://notification-service
           predicates:
-            - Path=/notifications/**
+            - Path=/api/v1/notifications/**
           filters:
             - name: CircuitBreaker
               args:
