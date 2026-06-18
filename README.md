@@ -28,7 +28,7 @@ Resilience4j
 
 Docker / Docker Compose
 
-Паттерны (задание):
+Паттерны:
 
 Gateway API
 
@@ -37,34 +37,3 @@ Service Discovery
 Circuit Breaker
 
 External Configuration
-
-Быстрый запуск:
-
-bash
-docker-compose up -d
-Сервисы:
-
-Компонент	Порт	URL
-Eureka Server	8761	http://localhost:8761
-Config Server	8888	http://localhost:8888
-API Gateway	8080	http://localhost:8080
-Notification Service	8082	http://localhost:8082
-Проверка работы:
-
-bash
-# Проверить состояние Circuit Breaker
-curl http://localhost:8082/actuator/circuitbreakers
-
-# Отправить уведомление через Gateway
-curl -X POST http://localhost:8080/api/v1/notifications/send \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","operation":"CREATE"}'
-Структура репозитория:
-
-text
-infrastructure/
-├── eureka-server/          # Service Discovery
-├── config-server/          # External Configuration
-├── api-gateway/            # API Gateway + Circuit Breaker
-├── config-repo/            # Конфигурационные файлы
-└── docker-compose.yml      # Запуск всех сервисов
